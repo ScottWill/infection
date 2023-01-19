@@ -1,1 +1,1 @@
-Rust app written with nannou and rapier to simulate the spread of an infection through a population
+Rust app written with [nannou](https://nannou.cc) and [rapier](https://rapier.rs) to simulate the spread of an infection through a population. It uses simple randomness and is not anything close to a real statistical model.
