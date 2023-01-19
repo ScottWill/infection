@@ -8,8 +8,8 @@ use super::{particle::Particle, settings::Settings};
 
 pub struct Model {
     egui: Egui,
-    particles: Option<HashMap<ColliderHandle,Particle>>,
-    physics: Option<Physics>,
+    particles: HashMap<ColliderHandle,Particle>,
+    physics: Physics,
     reload_pending: bool,
     settings: Settings,
     window_rect: Rect,
@@ -18,16 +18,14 @@ pub struct Model {
 impl Model {
 
     pub fn new(window: Ref<Window>) -> Self {
-        let mut this = Self {
+        Self {
             egui: Egui::from_window(&window),
-            particles: None,
-            physics: None,
+            particles: HashMap::new(),
+            physics: Physics::default(),
             reload_pending: true,
             settings: Settings::default(),
             window_rect: window.rect(),
-        };
-        this.reload();
-        this
+        }
     }
 
     pub fn handle_raw_event(&mut self, event: &nannou::winit::event::WindowEvent) {
@@ -43,32 +41,27 @@ impl Model {
     }
 
     fn reload(&mut self) {
-        let mut particles = HashMap::with_capacity(self.settings.population_size.value);
-        let mut physics = Physics::new(self.window_rect);
+        self.particles = HashMap::with_capacity(self.settings.population_size.value);
+        self.physics = Physics::new(self.window_rect);
 
         let rect = self.window_rect.pad(self.settings.particle_radius.value * 5.0);
         for i in 0..self.settings.population_size.value {
-            let mut particle = physics.add_particle(rect, self.settings.particle_radius.value, self.settings.particle_velocity.value);
+            let mut particle = self.physics.add_particle(rect, self.settings.particle_radius.value, self.settings.particle_velocity.value);
             if i == 0 {
                 particle.infect(self.settings.infection_time.value);
             }
-            particles.insert(particle.handle(), particle);
+            self.particles.insert(particle.handle(), particle);
         }
 
-        self.particles = Some(particles);
-        self.physics = Some(physics);
         self.reload_pending = false;
     }
 
     fn physics_update(&mut self, dt: f32) {
-        let particles = self.particles.as_mut().unwrap();
-        let physics = self.physics.as_mut().unwrap();
         let gravity: Vector2<f32> = Vector2::zeros();
-
-        let infections = physics.update(&particles, &gravity, self.settings.infection_rate.value * 0.01, dt);
+        let infections = self.physics.update(&self.particles, &gravity, self.settings.infection_rate.value * 0.01, dt);
 
         let mut deaths = Vec::new();
-        for (handle, particle) in particles.iter_mut() {
+        for (handle, particle) in &mut self.particles {
             if infections.contains(&handle) {
                 particle.infect(self.settings.infection_time.value);
             }
@@ -81,8 +74,8 @@ impl Model {
         }
 
         for death in deaths {
-            particles.remove(&death);
-            physics.remove(death);
+            self.particles.remove(&death);
+            self.physics.remove(death);
         }
     }
 
@@ -113,10 +106,8 @@ impl Model {
     }
 
     pub fn view(&self, app: &App, draw: &Draw, frame: Frame) {
-        let particles = self.particles.as_ref().unwrap();
-        let physics = self.physics.as_ref().unwrap();
-        for (handle, particle) in particles {
-            if let Some(meta) = physics.get_body_meta(*handle) {
+        for (handle, particle) in &self.particles {
+            if let Some(meta) = self.physics.get_body_meta(*handle) {
                 draw.ellipse()
                     .color(particle.color())
                     .radius(meta.radius)
