@@ -1,0 +1,1 @@
+Rust app written with nannou and rapier to simulate the spread of an infection through a population
