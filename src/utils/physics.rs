@@ -21,6 +21,7 @@ pub struct Physics {
     ccd_solver: CCDSolver,
     collider_set: ColliderSet,
     impulse_joint_set: ImpulseJointSet,
+    infections: HashSet<ColliderHandle>,
     integration_parameters: IntegrationParameters,
     island_manager: IslandManager,
     multibody_joint_set: MultibodyJointSet,
@@ -68,6 +69,10 @@ impl Physics {
         None
     }
 
+    pub fn infected(&self, handle: &ColliderHandle) -> bool {
+        self.infections.contains(handle)
+    }
+
     pub fn remove(&mut self, handle: ColliderHandle) {
         if let Some(coll) = self.collider_set.get(handle) {
             self.rigid_body_set.remove(
@@ -87,7 +92,7 @@ impl Physics {
         gravity: &Vector2<f32>,
         infection_rate: f32,
         dt: f32
-    ) -> HashSet<ColliderHandle> {
+    ) {
 
         let (collision_event_sender, collision_recv) = crossbeam::channel::unbounded();
         let (contact_force_event_sender, _) = crossbeam::channel::unbounded();
@@ -110,30 +115,29 @@ impl Physics {
             &events
         );
 
-        self.get_infections(&collision_recv, particles, infection_rate)
+        self.handle_collisions(&collision_recv, particles, infection_rate);
 
     }
 
-    fn get_infections(
-        &self,
+    fn handle_collisions(
+        &mut self,
         collision_recv: &Receiver<CollisionEvent>,
         particles: &HashMap<ColliderHandle, Particle>,
-        infection_rate: f32
-    ) -> HashSet<ColliderHandle> {
-        let mut infections = HashSet::new();
+        infection_rate: f32,
+    ) {
+        self.infections.clear();
         while let Ok(event) = collision_recv.try_recv() {
             if let Some(p1) = particles.get(&event.collider1()) {
                 if let Some(p2) = particles.get(&event.collider2()) {
                     if p1.infected() && p2.can_be_infected() && random_f32() <= infection_rate {
-                        infections.insert(p2.handle());
+                        self.infections.insert(p2.handle());
                     }
                     else if p2.infected() && p1.can_be_infected() && random_f32() <= infection_rate {
-                        infections.insert(p1.handle());
+                        self.infections.insert(p1.handle());
                     }
                 }
             }
         }
-        infections
     }
 
 }

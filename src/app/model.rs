@@ -1,7 +1,7 @@
 use nannou::prelude::*;
 use nannou_egui::{self, egui, Egui};
 use rapier2d::{na::Vector2, prelude::ColliderHandle};
-use std::{collections::HashMap, cell::Ref, time::Duration};
+use std::{collections::HashMap, cell::Ref, time::{Duration, Instant}};
 
 use crate::utils::physics::Physics;
 use super::{particle::Particle, settings::Settings};
@@ -58,11 +58,11 @@ impl Model {
 
     fn physics_update(&mut self, dt: f32) {
         let gravity: Vector2<f32> = Vector2::zeros();
-        let infections = self.physics.update(&self.particles, &gravity, self.settings.infection_rate.value * 0.01, dt);
+        self.physics.update(&self.particles, &gravity, self.settings.infection_rate.value * 0.01, dt);
 
         let mut deaths = Vec::new();
         for (handle, particle) in &mut self.particles {
-            if infections.contains(&handle) {
+            if self.physics.infected(handle) {
                 particle.infect(self.settings.infection_time.value);
             }
             particle.update(dt);
