@@ -4,6 +4,8 @@ use crate::app::particle::Particle;
 use nannou::prelude::*;
 use rapier2d::{prelude::*, na::{Vector2, UnitComplex}, crossbeam::{self, channel::Receiver}};
 
+const MAX_STEP: f32 = 1.0 / 45.0;
+
 pub struct BodyMeta {
     pub position: Vector2<f32>,
     pub radius: f32,
@@ -98,7 +100,7 @@ impl Physics {
         let (contact_force_event_sender, _) = crossbeam::channel::unbounded();
         let events = ChannelEventCollector::new(collision_event_sender, contact_force_event_sender);
 
-        self.integration_parameters.dt = dt;
+        self.integration_parameters.dt = dt.min(MAX_STEP);
         self.physics_pipeline.step(
             gravity,
             &self.integration_parameters,
