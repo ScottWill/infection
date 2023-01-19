@@ -1,7 +1,7 @@
 use nannou::prelude::*;
 use nannou_egui::{self, egui, Egui};
 use rapier2d::{na::Vector2, prelude::ColliderHandle};
-use std::{collections::HashMap, cell::Ref, time::{Duration, Instant}};
+use std::{collections::HashMap, cell::Ref, time::Duration};
 
 use crate::utils::physics::Physics;
 use super::{particle::Particle, settings::Settings};
