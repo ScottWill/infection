@@ -129,6 +129,7 @@ impl Physics {
     ) {
         self.infections.clear();
         while let Ok(event) = collision_recv.try_recv() {
+            if event.stopped() { continue }
             if let Some(p1) = particles.get(&event.collider1()) {
                 if let Some(p2) = particles.get(&event.collider2()) {
                     if p1.infected() && p2.can_be_infected() && random_f32() <= infection_rate {
