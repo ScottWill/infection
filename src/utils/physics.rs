@@ -10,14 +10,9 @@ pub struct BodyMeta {
 }
 
 impl BodyMeta {
-
     pub fn new(radius: f32, position: Vector2<f32>) -> Self {
-        Self {
-            position,
-            radius,
-        }
+        Self { position, radius }
     }
-
 }
 
 #[derive(Default)]
